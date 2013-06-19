@@ -19,7 +19,7 @@ touch /tmp/test/sffftp_sample/from/file2.tmp
 touch /tmp/test/sffftp_sample/from/file3.ok
 MKDIR
 
-sffftp = sffftp::Scp.new
+sffftp = Sffftp::Sftp.new
 sffftp.remote_host          = REMOTE_HOST
 sffftp.remote_user_name     = REMOTE_USER_NAME
 sffftp.remote_user_password = REMOTE_USER_PASSWORD

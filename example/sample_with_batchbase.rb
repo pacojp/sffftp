@@ -41,7 +41,7 @@ touch /tmp/test/sffftp_sample/from/file3.ok
 MKDIR
 
 execute(:pid_file=>LOCKFILE) do
-  sffftp = Sffftp::Scp.new()
+  sffftp = Sffftp::Sffftp.new()
   sffftp.logger               = logger
   sffftp.remote_host          = REMOTE_HOST
   sffftp.remote_user_name     = REMOTE_USER_NAME
