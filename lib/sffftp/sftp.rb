@@ -87,13 +87,47 @@ module Sffftp
       end
     end
 
+    #
+    # intended_pid
+    #
+    # 意図してQUEUE_FOLDER内に.pidファイルを
+    # 作っている場合は、その.pidがプロセスID
+    # と同じか？のチェックが走ります
+    # （同一ワークスペースへの同時起動簡易防止）
+    def intended_pid_file_path
+      queue_folder + '.pid'
+    end
+
+    def pid_st_in_intended_pid_file
+      if File.exist?(intended_pid_file_path)
+        File.read(intended_pid_file_path)
+      else
+        nil
+      end
+    end
+
+    def raise_unless_intended_process_id
+      unless actual_process_id.to_s == pid_st_in_intended_pid_file
+        raise "#{intended_pid_file_path} found. but process id not equal(actual_pid:#{$$}/.pid:#{pid_st_in_intended_pid_file})"
+      end
+    end
+
+    def actual_process_id
+      $$
+    end
+
     def proceed
       attrs_ok?
+
+      if File.exists?(intended_pid_file_path)
+        raise_unless_intended_process_id
+      end
 
       files = Dir::entries(queue_folder).map{|o|"#{queue_folder}/#{o}"}
       files = files.select do |o|
         File::ftype(o) == "file" &&
-          !(o =~ /\.(tmp|ok)$/)
+          !(o =~ /\.(tmp|ok)$/) &&
+          !(File.basename(o) =~ /^\..+$/)
       end
 
       unless @__not_first_time_to_proceed

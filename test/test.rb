@@ -3,6 +3,7 @@
 $: << File.dirname(__FILE__)
 require 'test_helper'
 require 'test/unit'
+require 'test/unit/rr'
 require "find"
 
 require 'sffftp'
@@ -15,7 +16,7 @@ class TestSffftp < Test::Unit::TestCase
   NG_FOLDER            = "#{SFFFTP_WORKING_DIR}error/"
   REMOTE_PATH          = "#{SFFFTP_WORKING_DIR}remote/"
   REMOTE_PORT          = 22
-  LOCK_FILE            = "#{SFFFTP_WORKING_DIR}test.lock"
+  #LOCK_FILE            = "#{SFFFTP_WORKING_DIR}test.lock"
   REMOTE_USER_NAME     = 'paco'
   REMOTE_USER_PASSWORD = nil
   REMOTE_HOST          = "localhost"
@@ -31,6 +32,7 @@ class TestSffftp < Test::Unit::TestCase
     delete_files(REMOTE_PATH)
     files = [
       @l_file     = QUEUE_FOLDER + 'testfile',
+      @l_file_dot = QUEUE_FOLDER + '.dot',
       @l_file1    = QUEUE_FOLDER + 'testfile1',
       @l_file2    = QUEUE_FOLDER + 'testfile2',
       @l_file_tmp = QUEUE_FOLDER + 'test.tmp',
@@ -41,6 +43,7 @@ class TestSffftp < Test::Unit::TestCase
     end
 
     @r_file = REMOTE_PATH + "testfile"
+    @r_file_dot = REMOTE_PATH + ".dot"
     @ng_file = NG_FOLDER + "testfile"
   end
 
@@ -196,7 +199,12 @@ class TestSffftp < Test::Unit::TestCase
   end
 
   def test_sffftp
+    simple_test
+  end
+
+  def simple_test
     assert_true File.exists?(@l_file)
+    assert_true File.exists?(@l_file_dot)
     assert_true File.exists?(@l_file1)
 
     sffftp = Sffftp::Sftp.new()
@@ -216,8 +224,12 @@ class TestSffftp < Test::Unit::TestCase
     assert_true File.exists?(REMOTE_PATH + "testfile2")
     assert_true File.exists?(REMOTE_PATH + "testfile2.ok")
 
-    assert_true File.exists?(@l_file_tmp)
-    assert_true File.exists?(@l_file_ok)
+    assert_false File.exists? @l_file
+    assert_true  File.exists? @l_file_tmp
+    assert_true  File.exists? @l_file_tmp
+    assert_true  File.exists? @l_file_ok
+    assert_true  File.exists? @l_file_dot
+    assert_false File.exists? @r_file_dot
   end
 
   def test_socket_error
@@ -245,4 +257,48 @@ class TestSffftp < Test::Unit::TestCase
     assert_true File.exists?(@l_file_ok)
   end
 
+  def test_intended_pid_file_path
+    sffftp = Sffftp::Sftp.new(attr)
+    assert_equal QUEUE_FOLDER + ".pid",
+      sffftp.intended_pid_file_path
+  end
+
+  def test_intended_pid
+    # pid = .pid
+    sffftp = Sffftp::Sftp.new(attr)
+    stub(sffftp).actual_process_id{1}
+    stub(sffftp).pid_st_in_intended_pid_file{"1"}
+    # should not raise
+    sffftp.raise_unless_intended_process_id
+
+    # pid != .pid
+    sffftp = Sffftp::Sftp.new(attr)
+    stub(sffftp).actual_process_id{2}
+    stub(sffftp).pid_st_in_intended_pid_file{"1"}
+    assert_raise do
+      sffftp.raise_unless_intended_process_id
+    end
+
+    # .pid check
+    sffftp = Sffftp::Sftp.new(attr)
+    assert_nil sffftp.pid_st_in_intended_pid_file
+    File.write(OK_FOLDER + '.pid','33')
+    assert_nil sffftp.pid_st_in_intended_pid_file
+    File.write(QUEUE_FOLDER + '.pid','33')
+    assert_equal '33', sffftp.pid_st_in_intended_pid_file
+
+    File.write(QUEUE_FOLDER + '.pid',$$)
+    assert_equal $$.to_s, sffftp.pid_st_in_intended_pid_file
+
+    # 上で設定した通りpid == .pidなら
+    # 普通に動く
+    simple_test
+
+    # pid != .pidならraise
+    File.write(QUEUE_FOLDER + '.pid',$$.to_s + "11")
+    sffftp = Sffftp::Sftp.new(attr)
+    assert_raise do
+      sffftp.proceed
+    end
+  end
 end

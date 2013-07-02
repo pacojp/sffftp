@@ -1,16 +1,20 @@
 PATH
   remote: .
   specs:
-    sffftp (0.0.1)
+    sffftp (0.0.3)
       net-sftp
 
 GEM
   remote: http://rubygems.org/
   specs:
-    net-sftp (2.1.2)
+    net-sftp (2.1.1)
       net-ssh (>= 2.6.5)
-    net-ssh (2.6.6)
+    net-ssh (2.6.7)
+    rr (1.1.1)
     test-unit (2.5.2)
+    test-unit-rr (1.0.2)
+      rr (>= 1.0.2)
+      test-unit (>= 2.5.2)
 
 PLATFORMS
   ruby
@@ -18,3 +22,4 @@ PLATFORMS
 DEPENDENCIES
   sffftp!
   test-unit (= 2.5.2)
+  test-unit-rr

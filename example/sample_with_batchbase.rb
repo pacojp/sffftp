@@ -26,7 +26,21 @@ REMOTE_USER_PASSWORD = nil
 WORK_SPACE = '/tmp/test/sffftp_sample/'
 REMOTE_PATH = WORK_SPACE + 'remote/'
 QUEUE_FOLDER = WORK_SPACE + 'from/'
-LOCKFILE = WORK_SPACE + '.sffftp.lock'
+#
+# sffftp内で実装している二重起動防止機能
+# (QUEUE_FOLDER内に.pidファイルがある場合
+# その値と$$を比較し、違う場合はraiseする)を
+# 有効にするにはlockファイルを
+# "#{QUEUE_FOLDER}.pid"に設定する
+#
+# このスクリプトで同内容を確認するには
+# 本スクリプトで起動した後以下のLOCKFILEの
+# 項目のコメントアウトを入れ替えて再実行すると
+# sffftp内のraiseが確認できる
+#
+LOCKFILE = QUEUE_FOLDER + '.pid'
+#LOCKFILE = WORK_SPACE + '.sffftp.lock'
+
 OK_FOLDER = WORK_SPACE + 'ok'
 NG_FOLDER = WORK_SPACE + 'ng'
 
@@ -41,7 +55,7 @@ touch /tmp/test/sffftp_sample/from/file3.ok
 MKDIR
 
 execute(:pid_file=>LOCKFILE) do
-  sffftp = Sffftp::Sffftp.new()
+  sffftp = Sffftp::Sftp.new()
   sffftp.logger               = logger
   sffftp.remote_host          = REMOTE_HOST
   sffftp.remote_user_name     = REMOTE_USER_NAME
